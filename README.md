@@ -1,139 +1,74 @@
+# XEMI Linux Disk Helper
 
-# XEMI Disk Helper (v3.0)
+**Interactive Bash utility for managing disks and partitions safely on any Linux system.**  
+Supports **AlmaLinux**, **Debian**, **Ubuntu**, **Fedora**, **Raspberry Pi OS**, and others.
 
-Interactive Bash helper to manage disks on Linux servers  
-(tested on AlmaLinux, but works on any distro with the required tools).
-
-> Typical use case: prepare and mount an external disk for persistent
-> storage (for example, `/srv/cloud_data` for a Django project).
+> 💡 Typical use: prepare and mount external storage for persistent data —  
+> e.g. `/srv/cloud_data` for a Django project, or `/mnt/backup` for a home server.
 
 ---
 
-## Table of contents
+## 📖 Table of Contents
 
+- [About](#about)
 - [Features](#features)
-- [How it works](#how-it-works)
+- [Preview](#preview)
+- [How It Works](#how-it-works)
 - [Requirements](#requirements)
 - [Installation](#installation)
 - [Usage](#usage)
-  - [Main menu](#main-menu)
-  - [Option 1 – List available disks](#option-1--list-available-disks)
-  - [Option 2 – Mount a device](#option-2--mount-a-device)
-  - [Option 3 – Unmount a device](#option-3--unmount-a-device)
-  - [Option 4 – Change device label](#option-4--change-device-label)
-  - [Option 5 – Format a device](#option-5--format-a-device-dangerous)
-- [Automatic `/etc/fstab` entry](#automatic-etcfstab-entry)
-- [Quick ext4 format helper](#quick-ext4-format-helper)
-- [Typical workflow for a server (example with Django)](#typical-workflow-for-a-server-example-with-django)
+  - [Main Menu](#main-menu)
+  - [List Disks](#1-list-available-disks)
+  - [Mount Disk](#2-mount-a-device)
+  - [Unmount Disk](#3-unmount-a-device)
+  - [Change Label](#4-change-device-label)
+  - [Format Partition](#5-format-a-device-dangerous)
+- [Automatic fstab Entry](#automatic-etcfstab-entry)
+- [Quick ext4 Format Helper](#quick-ext4-format-helper)
+- [Example Workflow: Django Server](#example-workflow-django-server)
 - [Logs](#logs)
-- [Safety notes](#safety-notes)
+- [Safety Notes](#safety-notes)
 - [License](#license)
 
 ---
 
-## Features
+## 🧩 About
 
-XEMI Disk Helper provides an interactive TUI in the terminal:
+**XEMI Linux Disk Helper** is a cross-distro shell tool for managing disks without manually typing dangerous commands.  
+It guides you interactively through **mounting, unmounting, formatting, labeling, and fstab persistence** — all while protecting your system disk.
 
-- Detects and lists **all partitions** with:
-  - name, size, filesystem, label, mountpoint, status
-  - highlights system disk and root (`/`) partition for safety
-- **Mounts** a partition to a chosen path:
-  - predefined options (`/mnt`, `/media`, `/run/media/$USER`)
-  - custom mountpoint
-- Can **create a filesystem** before mounting:
-  - Detects if there is no filesystem
-  - Detects **NTFS** and explains why it is not ideal on Linux servers
-  - Offers to convert it to `ext4`
-- **Generates persistent `/etc/fstab` entries**:
-  - Uses `UUID`, not `/dev/sdX`
-  - Creates automatic backup of `fstab`
-  - Tests the new entry with `mount -a` and restores backup if it fails
-- **Unmounts** devices safely (never touches system disk)
-- **Changes partition labels** (`ext4`, `vfat`, `ntfs` if tools exist)
-- **Formats partitions** as:
-  - `ext4` (recommended for Linux servers)
-  - `vfat` (FAT32)
-  - `ntfs` (if tools are installed)
-- All actions are logged in a simple text log
+It’s designed for:
+- sysadmins and developers who work with multiple servers
+- Raspberry Pi and homelab setups
+- quick deployment in web environments (e.g. Django media disks)
 
 ---
 
-## How it works
+## ⚙️ Features
 
-The script is a single Bash file that wraps common CLI tools:
-
-- `lsblk`, `blkid`, `findmnt` for disk information
-- `mount`, `umount` for mounting
-- `mkfs.ext4`, `mkfs.vfat`, `mkfs.ntfs` for formatting
-- `e2label`, `fatlabel`, `ntfslabel` for label changes
-
-It adds:
-
-- safety checks (never formats or mounts partitions from the system disk)
-- interactive confirmations
-- automatic `/etc/fstab` line generation
-- a log file for traceability
-
----
-
-## Requirements
-
-Required commands (the script checks and can auto-install them):
-
-- `lsblk`
-- `mount`, `umount`
-- `sudo`
-- `mkfs.ext4`, `mkfs.vfat`
-- `e2label`, `fatlabel`
-- `blkid`
-- `findmnt`
-
-Optional commands (only needed for full NTFS support):
-
-- `mkfs.ntfs`
-- `ntfslabel`
-
-Supported package managers:
-
-- `apt`
-- `dnf`
-- `pacman`
-- `zypper`
+- 🔍 **Detects all partitions** (size, fs type, label, mountpoint, status)
+- 🧱 **Mounts devices** safely to `/mnt`, `/media`, `/srv`, or custom paths
+- 🧠 **Smart FS detection**:
+  - Detects empty or NTFS drives
+  - Suggests converting to `ext4`
+- 📦 **Persistent mounts via `/etc/fstab`**
+  - Uses `UUID` instead of `/dev/sdX`
+  - Creates automatic `fstab` backups
+- 🏷️ **Change partition labels** (`ext4`, `vfat`, `ntfs`)
+- 🧹 **Format helper** (ext4, FAT32, NTFS)
+- 🔐 **Prevents system/root disk modifications**
+- 📝 **Action logs** (`~/.xemi_logs/disk_manager.log`)
+- 🎨 **Colored TUI for clarity**
 
 ---
 
-## Installation
+## 🖼️ Preview
 
-Clone the repository and make the script executable:
-
-```bash
-git clone https://github.com/Vgarcan/almalinux_disk_helper.git
-cd almalinux_disk_helper
-
-chmod +x xemi_disk_helper.sh  # or the name you use
-````
-
-Run it from the terminal:
-
-```bash
-./xemi_disk_helper.sh
-```
-
-> You do **not** have to run the script as root directly.
-> It uses `sudo` when needed (mount, format, fstab).
-
----
-
-## Usage
-
-### Main menu
-
-When you run the script you will see something like:
+Example menu:
 
 ```text
-=== XEMI Disk Helper ===
-Disk management tool for Linux servers.
+=== XEMI Linux Disk Helper ===
+Disk management tool for Linux systems.
 ----------------------------------------
 User: baker
 Time: 2025-11-27 23:42:10
@@ -149,266 +84,202 @@ Choose an option:
  6) Exit
 ----------------------------------------
 Option [1-6]:
+````
+
+---
+
+## 🧠 How It Works
+
+Internally uses standard Linux tools:
+
+| Category   | Commands                                         |
+| ---------- | ------------------------------------------------ |
+| Disk info  | `lsblk`, `blkid`, `findmnt`                      |
+| Mounting   | `mount`, `umount`, `sudo`                        |
+| Filesystem | `mkfs.ext4`, `mkfs.vfat`, `mkfs.ntfs` (optional) |
+| Labels     | `e2label`, `fatlabel`, `ntfslabel`               |
+
+Adds logic for:
+
+* system disk protection
+* colorized prompts
+* automatic `/etc/fstab` management
+* consistent logging
+
+---
+
+## 🧰 Requirements
+
+### Required tools
+
+* `lsblk`
+* `mount`, `umount`
+* `sudo`
+* `mkfs.ext4`, `mkfs.vfat`
+* `e2label`, `fatlabel`
+* `blkid`, `findmnt`
+
+### Optional for NTFS
+
+* `mkfs.ntfs`, `ntfslabel`
+* package `ntfs-3g`
+
+### Supported package managers
+
+`apt`, `dnf`, `pacman`, `zypper`
+
+---
+
+## ⚡ Installation
+
+Clone and make executable:
+
+```bash
+git clone https://github.com/Vgarcan/xemi_linux_disk_helper.git
+cd xemi_linux_disk_helper
+chmod +x xemi_linux_disk_helper.sh
 ```
 
-You can always go back to the main menu by pressing ENTER when asked.
+Run directly:
+
+```bash
+./xemi_linux_disk_helper.sh
+```
+
+> 🚫 Do **not** run as root — the script uses `sudo` where needed.
 
 ---
 
-### Option 1 – List available disks
+## 🧭 Usage
 
-Shows a table of **all partitions** (`TYPE = part`) with:
+### Main Menu
 
-* `NAME` (e.g. `sdb1`)
-* `SIZE`
-* `FSTYPE`
-* `LABEL`
-* `MOUNTPOINT`
-* `STATUS`:
+All actions are interactive and color-coded.
 
-  * `[ROOT PARTITION]` → where `/` is mounted
-  * `[SYSTEM DISK]` → same physical disk as the OS
-  * `Mounted` or `Not Mounted`
+### 1️⃣ List Available Disks
 
-This is the safest way to check which partition you want to use
-before formatting or mounting anything.
+Displays partition table including:
 
----
+* size, filesystem, label, mount point
+* highlights `[ROOT PARTITION]` and `[SYSTEM DISK]`
 
-### Option 2 – Mount a device
+### 2️⃣ Mount a Device
 
-Guides you through mounting a partition, for example `sdb1`.
+Guided mount flow:
 
-Steps:
+* Validates device (e.g. `sdb1`)
+* Detects filesystem
+* Offers conversion to `ext4` if NTFS
+* Mounts to your chosen folder
+* Optionally adds `/etc/fstab` entry for persistence
 
-1. Shows the same table as in option 1
-2. Asks for the partition name (e.g. `sdb1`)
-3. Validates that:
+### 3️⃣ Unmount a Device
 
-   * it exists
-   * it is a **partition**, not a whole disk
-   * it is **not** on the system disk
-4. Detects filesystem (`FSTYPE`):
+Lists current mounts in `/mnt`, `/media`, `/run/media`
+Safely unmounts after confirmation.
 
-   * **no filesystem** → offers to create `ext4`
-   * **NTFS** → explains limitations and offers:
+### 4️⃣ Change Device Label
 
-     * reformat to `ext4` (recommended on servers)
-     * try to mount NTFS
-     * cancel
-5. Asks for the mountpoint:
+Rename a partition label interactively (without formatting).
+Detects correct command based on FS type.
 
-   * `/mnt/<dev>`
-   * `/media/<dev>`
-   * `/run/media/$USER/<dev>`
-   * custom path
-6. Creates the directory if needed and runs `mount`
-7. After a successful mount, optionally offers to create a
-   **persistent `/etc/fstab` entry** (see below)
+### 5️⃣ Format a Device (⚠️ Dangerous)
 
-If the mount fails because of filesystem issues, it can offer a quick ext4 format
-and re-try the mount on the same mountpoint.
+* Confirms twice before execution
+* Supports: `ext4`, `vfat`, `ntfs`
+* Allows custom label
+* Prevents system disk formatting
 
 ---
 
-### Option 3 – Unmount a device
+## 🧩 Automatic `/etc/fstab` Entry
 
-Shows all partitions that are currently mounted under:
+Automatically adds a persistent mount entry using UUIDs.
 
-* `/mnt`
-* `/media`
-* `/run/media`
-
-Then:
-
-1. Asks for the partition name (e.g. `sdb1`)
-2. Refuses to unmount anything on the system disk
-3. Asks for confirmation
-4. Runs `sudo umount /dev/<dev>`
-
-Useful when you want to safely disconnect a disk or change its filesystem.
-
----
-
-### Option 4 – Change device label
-
-Lets you change the **label** of a partition.
-
-Flow:
-
-1. Shows partitions table (similar to option 1)
-2. Asks for a device (`sdb1`)
-3. Refuses to act on system disk partitions
-4. Detects filesystem and uses:
-
-   * `e2label` for `ext2/3/4`
-   * `fatlabel` for `vfat/fat32`
-   * `ntfslabel` for `ntfs` (if installed)
-5. Asks for new label (no spaces) and applies it
-
----
-
-### Option 5 – Format a device (DANGEROUS)
-
-Full manual formatter with extra confirmations.
-
-Steps:
-
-1. Shows partitions table
-2. Asks for target partition (e.g. `sdb1`)
-3. Verifies that it exists and is not part of the system disk
-4. Double confirmation:
-
-   * type `yes`
-   * type `FORMAT`
-5. Choose filesystem:
-
-   * `ext4` (recommended)
-   * `vfat`
-   * `ntfs` (only if `mkfs.ntfs` exists)
-6. Optional label
-7. Runs the corresponding `mkfs.*` command
-
-> This **erases all data** on the selected partition.
-> Use it only if you are 100 % sure.
-
----
-
-## Automatic `/etc/fstab` entry
-
-When a mount succeeds, the script can generate a persistent entry in `/etc/fstab`.
-
-What it does:
-
-1. Gets `UUID` with `blkid`
-
-2. Detects filesystem (`FSTYPE`) with `lsblk`
-
-3. Builds a line:
+1. Creates a backup of `/etc/fstab`
+2. Adds line:
 
    ```text
    UUID=<uuid>  <mountpoint>  <fstype>  defaults  0  0
    ```
-
-4. Shows the line and asks for confirmation
-
-5. Creates a timestamped backup:
-
-   ```bash
-   /etc/fstab.backup-YYYYMMDD-HHMMSS
-   ```
-
-6. Appends the line to `/etc/fstab` if there is no existing entry for
-   that UUID or mountpoint
-
-7. Runs `mount -a` to test the whole `fstab`:
-
-   * if success → keeps the new file
-   * if failure → restores the backup and shows the error
-
-This makes it easy to have disks that re-mount automatically after reboot.
+3. Tests with `mount -a`
+4. Restores backup if test fails
 
 ---
 
-## Quick ext4 format helper
+## ⚡ Quick ext4 Format Helper
 
-During **mount** or when the script detects:
+Appears automatically when:
 
-* no filesystem
-* NTFS where ext4 is preferred
+* partition has no filesystem, or
+* NTFS detected on a server disk.
 
-you may see the *quick ext4* helper:
-
-* Asks to type `ext4` to confirm
-* Optional label
-* Runs `mkfs.ext4` (with or without `-L`)
-* Logs the action
-
-This is useful when you plug in a Windows disk and want to convert it
-quickly to a native Linux filesystem before using it for something like
-database or Django media storage.
+You can confirm to convert to `ext4` instantly.
 
 ---
 
-## Typical workflow for a server (example with Django)
+## 🧱 Example Workflow: Django Server
 
-Example scenario (like the author uses):
+```bash
+./xemi_linux_disk_helper.sh
+```
 
-> Attach an external disk and use it for `MEDIA_ROOT` in a Django project.
+1️⃣ Identify external disk (e.g. `/dev/sdb1`)
+2️⃣ Mount it to `/srv/cloud_data`
+3️⃣ Accept adding to `/etc/fstab`
+4️⃣ Prepare folder:
 
-1. Plug the disk and run the script:
+```bash
+sudo mkdir -p /srv/cloud_data/myproject_media
+sudo chown -R myuser:mygroup /srv/cloud_data/myproject_media
+sudo chmod -R 775 /srv/cloud_data/myproject_media
+```
 
-   ```bash
-   ./xemi_disk_helper.sh
-   ```
+5️⃣ In your `settings.py`:
 
-2. Use **Option 1** to identify the partition, e.g. `sdb1`
-
-3. Use **Option 2**:
-
-   * Select `sdb1`
-   * If NTFS or empty → quick format to `ext4`
-   * Choose mountpoint, e.g. `/srv/cloud_data`
-   * Accept to create `/etc/fstab` entry
-
-4. Create a folder for your project media:
-
-   ```bash
-   sudo mkdir -p /srv/cloud_data/myproject_media
-   sudo chown -R myuser:mygroup /srv/cloud_data/myproject_media
-   sudo chmod -R 775 /srv/cloud_data/myproject_media
-   ```
-
-5. In `settings.py` of the Django project:
-
-   ```python
-   MEDIA_URL = '/media/'
-   MEDIA_ROOT = '/srv/cloud_data/myproject_media'
-   ```
-
-6. From now on, any `FileField`/`ImageField` will store files
-   in the external disk, mounted at `/srv/cloud_data`.
+```python
+MEDIA_URL = '/media/'
+MEDIA_ROOT = '/srv/cloud_data/myproject_media'
+```
 
 ---
 
-## Logs
+## 🧾 Logs
 
-All actions are logged to:
+Logs are saved to:
 
-```text
+```bash
 ~/.xemi_logs/disk_manager.log
 ```
 
-Each entry includes:
-
-* timestamp
-* user
-* a short description, for example:
+Example:
 
 ```text
 [2025-11-27 23:40:01] USER=baker | Mounted /dev/sdb1 at /srv/cloud_data
 [2025-11-27 23:41:10] USER=baker | Added fstab entry for /dev/sdb1 at /srv/cloud_data
 ```
 
-Useful when you need to remember what was done on a given server.
+---
+
+## 🔒 Safety Notes
+
+* Never touches root or system disks
+* Confirms before destructive actions
+* Always backs up `/etc/fstab`
+* Displays all mountpoints clearly before acting
 
 ---
 
-## Safety notes
+## 🪪 License
 
-* The script **never** formats or relabels partitions on the system disk
-  (`/` and its siblings) by design.
-* For other disks, all destructive operations require explicit confirmation.
-* Always double-check the target device (`sdb1`, `sdc1`, …) in the table
-  before formatting or mounting.
-* Keep the `/etc/fstab` backups created by the script, especially on production servers.
+**MIT License**
+Use, modify, and redistribute freely.
+Contributions, feedback, and pull requests are welcome!
 
 ---
 
-## License
+## 👨‍💻 Author
 
-MIT License – feel free to use, modify and adapt it for your own servers and workflows.
-
-Contributions and suggestions are welcome.
-
-
+**Victor Garcia (Vgarcan)**
+🔗 [GitHub Profile](https://github.com/Vgarcan)
+💬 Developer & RPA Business Analyst — passionate about automation and Linux infrastructure tools.
